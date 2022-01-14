@@ -9,7 +9,7 @@ public class ExecutionController {
     private Condition cond = lock.newCondition();
 
     static private final int defaultAnimationTimeStamp = 1;
-    static private final int defaultSimulationTimeStamp = 2;
+    static private final int defaultSimulationTimeStamp = 1;
 
     private int animationTimeStamp;
     private int simulationTimeStamp;

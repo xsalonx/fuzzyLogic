@@ -1,0 +1,92 @@
+FUNCTION_BLOCK
+
+VAR_INPUT
+left_border_distance : REAL;
+right_border_distance : REAL;
+direct_angle : REAL;
+trap_distance : REAL;
+END_VAR
+
+VAR_OUTPUT
+direct_change : REAL;
+END_VAR
+
+FUZZIFY left_border_distance
+TERM near := (000, 1) (500, 1) (2000, 0);
+TERM far := (500, 0) (1500, 1) (3000, 1) (4000, 0);
+TERM far_away := (3000, 0) (4000, 1) (5000, 1) (6000, 0);
+END_FUZZIFY
+
+FUZZIFY right_border_distance
+TERM near := (000, 1) (500, 1) (2000, 0);
+TERM far := (500, 0) (1500, 1) (3000, 1) (4000, 0);
+TERM far_away := (3000, 0) (4000, 1) (5000, 1) (6000, 0);
+END_FUZZIFY
+
+FUZZIFY trap_distance
+TERM too_close := (-100, 0) (-50, 1) (50, 1) (100, 0);
+TERM near_left := (-2000, 0) (-500, 1) (-200, 1) (100, 0);
+TERM left := (-6000, 0) (-2000, 1) (-1500, 1) (-1000, 0);
+TERM near_right := (-100, 0) (200, 1) (500, 1) (2000, 0);
+TERM right := (1000, 0) (1500, 1) (2000, 1) (6000, 1);
+END_FUZZIFY
+
+
+FUZZIFY direct_angle
+TERM central := (-4, 0) (-1, 1) (1, 1) (4, 0);
+TERM left := (-35, 0) (-15, 1) (-5, 1) (0, 0);
+TERM v_left := (-90, 1) (-70, 1) (-30, 0);
+TERM right := (0, 0) (5, 1) (15, 1) (35, 0);
+TERM v_right := (30, 0) (70, 1) (90, 1);
+END_FUZZIFY
+
+DEFUZZIFY direct_change
+TERM little_left := (-1, 0) (-0.5, 1) (-0.25, 1) (0.1, 0);
+TERM slightly_left := (-3, 0) (-2, 1) (-1, 1) (0, 0);
+TERM rapidly_left := (-7, 0) (-5, 1) (-3, 1) (-1, 0);
+
+TERM little_right := (-0.1, 0) (0.25, 1) (0.5, 1) (1, 0);
+TERM slightly_right := (0, 0) (1, 1) (2, 1) (3, 0);
+TERM rapidly_right := (1, 0) (3, 1) (5, 1) (7, 0);
+METHOD : COA;
+DEFAULT := 0;
+END_DEFUZZIFY
+
+RULEBLOCK first
+AND: MIN;
+ACT: MIN;
+
+RULE 0: IF direct_angle is left AND left_border_distance is near THEN direct_change is rapidly_right;
+RULE 1: IF direct_angle is right AND right_border_distance is near THEN direct_change is rapidly_left;
+
+RULE 2: IF direct_angle is left AND left_border_distance is far THEN direct_change is slightly_left;
+RULE 3: IF direct_angle is right AND right_border_distance is far THEN direct_change is slightly_right;
+
+RULE 4: IF direct_angle is left THEN direct_change is rapidly_left;
+RULE 5: IF direct_angle is right THEN direct_change is rapidly_right;
+
+RULE 6: IF trap_distance is near_left AND left_border_distance is far
+          THEN direct_change is slightly_right;
+
+RULE 7: IF trap_distance is near_right AND right_border_distance is far
+            THEN direct_change is slightly_left;
+
+RULE 8: IF (trap_distance is left OR trap_distance is right) AND direct_angle is left
+            THEN direct_change is little_right WITH 25;
+
+RULE 9: IF (trap_distance is left OR trap_distance is right) AND direct_angle is right
+            THEN direct_change is little_left WITH 25;
+
+
+RULE 10: IF trap_distance is too_close AND right_border_distance is far
+            THEN direct_change is rapidly_left WITH 30;
+RULE 11: IF trap_distance is too_close AND left_border_distance is far
+            THEN direct_change is rapidly_right WITH 30;
+
+RULE 12: IF direct_angle is v_left THEN direct_change is rapidly_right;
+RULE 13: IF direct_angle is v_right THEN direct_change is rapidly_left;
+
+
+END_RULEBLOCK
+
+END_FUNCTION_BLOCK

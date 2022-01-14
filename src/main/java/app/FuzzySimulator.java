@@ -1,9 +1,11 @@
 package app;
 
 import lombok.Getter;
+import lombok.Setter;
 import net.sourceforge.jFuzzyLogic.FIS;
 import net.sourceforge.jFuzzyLogic.rule.FuzzyRuleSet;
 
+@Setter
 @Getter
 public class FuzzySimulator {
     public enum FuzzyTerms{
@@ -19,7 +21,7 @@ public class FuzzySimulator {
         }
 
     }
-    private final String fclFile = "controller.fcl";
+    private final String fclFile = "./FCL/controller.fcl";
 
     private final FuzzyRuleSet fuzzyRuleSet;
     private final ExecutionController executionController;
@@ -27,34 +29,34 @@ public class FuzzySimulator {
     private final int height;
     private int currentY;
     private int currentX;
-    private final double velocity;
+    private double velocity;
     private double currentDirect;
     private double trapDistance;
-    private final double stepRate = 1;
+    private double stepRate = 1;
 
     private int trapX;
     private int trapY;
     private final int trapRadius;
     private final static double trapRadiusRate = 0.1;
-    private final static double spaceScaler = 1;
+    private final static double spaceCalibrationScalar = 1;
 
-    public FuzzySimulator(ExecutionController executionController) {
+    public FuzzySimulator(String path, ExecutionController executionController) {
         this.executionController = executionController;
-        this.width = 500;
-        this.height = 500;
+        this.width = 5000;
+        this.height = 5000;
         currentX = width / 2;
-        currentY = (int) (height * 0.8);
+        currentY = (int) (height * 0.75);
         trapX = width / 2;
-        trapY = 0;
+        trapY = (int)(height * 0.01);
         trapRadius = (int) (Math.min(width, height) * trapRadiusRate);
 
-        FIS fis = FIS.load(fclFile, false);
+        FIS fis = FIS.load(path, false);
 
         fuzzyRuleSet = fis.getFuzzyRuleSet();
         currentDirect = 0;
         fuzzyRuleSet.setVariable(FuzzyTerms.direct_angle.s, currentDirect);
-        velocity = 2;
-//        fuzzyRuleSet.chart();
+        velocity = 4;
+        fuzzyRuleSet.chart();
     }
 
     public void run() {
@@ -74,8 +76,8 @@ public class FuzzySimulator {
     }
 
     private void move() {
-        double sin=Math.sin(Math.toRadians(currentDirect));
-        double cos=Math.cos(Math.toRadians(currentDirect));
+        double sin = Math.sin(Math.toRadians(currentDirect));
+        double cos = Math.cos(Math.toRadians(currentDirect));
         currentX += 2 * stepRate * sin * velocity;
         if (currentX < 0.1 * width)
             currentX = (int)(0.1 * width);
@@ -83,18 +85,17 @@ public class FuzzySimulator {
             currentX = (int)(0.9 * width);
 
         trapY += stepRate * cos * velocity;
-        System.out.println("sincosing: "+ sin + ", " + cos);
+        System.out.println("sin and cos of direction: "+ sin + ", " + cos);
     }
     private void setFuzzyInputs() {
-        if (trapY > currentY + (height - currentY) / 2)
+        if (trapY > currentY + (height - currentY) / 1.5)
             createNewTrap();
-        trapDistance = (currentX - trapX) * spaceScaler;
+        trapDistance = (currentX - trapX) * spaceCalibrationScalar;
 
         System.out.println("borders: " + currentX + ", " + (width - currentX));
-        fuzzyRuleSet.setVariable(FuzzyTerms.left_border_distance.s, currentX * spaceScaler);
-        fuzzyRuleSet.setVariable(FuzzyTerms.right_border_distance.s, (width - currentX) * spaceScaler);
+        fuzzyRuleSet.setVariable(FuzzyTerms.left_border_distance.s, currentX * spaceCalibrationScalar);
+        fuzzyRuleSet.setVariable(FuzzyTerms.right_border_distance.s, (width - currentX) * spaceCalibrationScalar);
 
-//        collisionDistance = 0.1 * Math.sqrt(Math.pow(currentX - trapX, 2) + Math.pow(currentY - trapY, 2));
         fuzzyRuleSet.setVariable(FuzzyTerms.trap_distance.s, trapDistance);
     }
 
@@ -113,13 +114,27 @@ public class FuzzySimulator {
     }
 
     private void createNewTrap() {
-        trapY = 5;
+        trapY = (int) (height * 0.01);
         trapX = (int) (Math.random() * width);
     }
 
     public static void main(String[] args) {
-        FuzzySimulator fuzzySimulator = new FuzzySimulator(new ExecutionController());
+        FuzzySimulator fuzzySimulator = new FuzzySimulator("./FCL/controller.fcl", new ExecutionController());
         fuzzySimulator.run();
+    }
+
+    public double incrementVelocity() {
+        return ++velocity;
+    }
+    public double decrementVelocity() {
+        return velocity >= 2 ? --velocity : velocity;
+    }
+
+    public double incrementStep() {
+        return ++stepRate;
+    }
+    public double decrementStep() {
+        return stepRate >= 2 ? --stepRate : stepRate;
     }
 
 }
