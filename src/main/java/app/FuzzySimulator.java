@@ -29,19 +29,19 @@ public class FuzzySimulator {
     private int currentX;
     private final double velocity;
     private double currentDirect;
-    private double collisionDistance;
-    private final double stepRate = 0.5;
+    private double trapDistance;
+    private final double stepRate = 1;
 
     private int trapX;
     private int trapY;
     private final int trapRadius;
     private final static double trapRadiusRate = 0.1;
-    private final static double spaceScaler = 0.1;
+    private final static double spaceScaler = 1;
 
-    public FuzzySimulator(ExecutionController executionController, int width, int height) {
+    public FuzzySimulator(ExecutionController executionController) {
         this.executionController = executionController;
-        this.width = width;
-        this.height = height;
+        this.width = 500;
+        this.height = 500;
         currentX = width / 2;
         currentY = (int) (height * 0.8);
         trapX = width / 2;
@@ -58,15 +58,15 @@ public class FuzzySimulator {
     }
 
     public void run() {
-        setFuzzyInputs();
         while (!executionController.checkIfEnd()){
-            System.out.println(currentX + " " + currentY + " " + trapX + " " + trapY);
-            System.out.println(currentDirect + " " + " " + collisionDistance + " " + '\n');
-            move();
-
             setFuzzyInputs();
+
+            System.out.println(currentX + " " + currentY + " " + trapX + " " + trapY);
+            System.out.println(currentDirect + " " + " " + trapDistance + " " + '\n');
             fuzzyRuleSet.evaluate();
             updateFromFuzzyOutputs();
+            move();
+
             executionController.waitIfEnabled();
             executionController.sleepSimulation();
         }
@@ -74,30 +74,39 @@ public class FuzzySimulator {
     }
 
     private void move() {
-        currentX += 3 * stepRate * Math.sin(Math.toRadians(currentDirect)) * velocity;
-        trapY += stepRate * Math.cos(Math.toRadians(currentDirect)) * velocity;
-        if (trapY > currentY + (height - currentY) / 2)
-            createNewTrap();
+        double sin=Math.sin(Math.toRadians(currentDirect));
+        double cos=Math.cos(Math.toRadians(currentDirect));
+        currentX += 2 * stepRate * sin * velocity;
+        if (currentX < 0.1 * width)
+            currentX = (int)(0.1 * width);
+        else if (currentX > 0.9 * width)
+            currentX = (int)(0.9 * width);
+
+        trapY += stepRate * cos * velocity;
+        System.out.println("sincosing: "+ sin + ", " + cos);
     }
     private void setFuzzyInputs() {
-        if (trapY >= currentY) {
+        if (trapY > currentY + (height - currentY) / 2)
             createNewTrap();
-        }
-        collisionDistance = (currentX - trapX) * 0.1;
+        trapDistance = (currentX - trapX) * spaceScaler;
 
         System.out.println("borders: " + currentX + ", " + (width - currentX));
-        fuzzyRuleSet.setVariable(FuzzyTerms.left_border_distance.s, currentX * 0.1);
-        fuzzyRuleSet.setVariable(FuzzyTerms.right_border_distance.s, (width - currentX)*0.1);
+        fuzzyRuleSet.setVariable(FuzzyTerms.left_border_distance.s, currentX * spaceScaler);
+        fuzzyRuleSet.setVariable(FuzzyTerms.right_border_distance.s, (width - currentX) * spaceScaler);
 
 //        collisionDistance = 0.1 * Math.sqrt(Math.pow(currentX - trapX, 2) + Math.pow(currentY - trapY, 2));
-        fuzzyRuleSet.setVariable(FuzzyTerms.trap_distance.s, collisionDistance);
+        fuzzyRuleSet.setVariable(FuzzyTerms.trap_distance.s, trapDistance);
     }
 
     private void updateFromFuzzyOutputs() {
-        Double value = fuzzyRuleSet.getVariable(FuzzyTerms.direct_change.s).getLatestDefuzzifiedValue();
+        double value = fuzzyRuleSet.getVariable(FuzzyTerms.direct_change.s).getLatestDefuzzifiedValue();
         System.out.println("direction changes: " + value);
-        if (!value.isNaN()) {
+        if (!Double.isNaN(value)) {
             currentDirect += value;
+            if (currentDirect > 85)
+                currentDirect = 86;
+            else if (currentDirect < -85)
+                currentDirect = -85;
             fuzzyRuleSet.setVariable(FuzzyTerms.direct_angle.s, currentDirect);
             System.err.println("value is NaN ;/");
         }
@@ -105,12 +114,11 @@ public class FuzzySimulator {
 
     private void createNewTrap() {
         trapY = 5;
-        double d = Math.min(currentX, width - currentX);
-        trapX = (int) ((Math.random() - 0.5) / 2 * d + currentX);
+        trapX = (int) (Math.random() * width);
     }
 
     public static void main(String[] args) {
-        FuzzySimulator fuzzySimulator = new FuzzySimulator(new ExecutionController(), 500, 500);
+        FuzzySimulator fuzzySimulator = new FuzzySimulator(new ExecutionController());
         fuzzySimulator.run();
     }
 

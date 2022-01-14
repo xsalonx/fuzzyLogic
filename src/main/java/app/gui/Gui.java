@@ -23,11 +23,11 @@ public class Gui {
             g.setColor(Color.WHITE);
             g.fillRect(0, 0, getWidth(), getHeight());
             Graphics2D g2d = (Graphics2D) g;
-            double scaleRatio = (double) Math.min(getHeight(), getWidth()) / 500;
+            double scaleRatio = (double) Math.min(getHeight(), getWidth()) / fuzzySimulator.getWidth();
             double radius = fuzzySimulator.getTrapRadius() * scaleRatio;
             Ellipse2D trap = new Ellipse2D.Double(
-                    fuzzySimulator.getTrapX() * scaleRatio - radius / 2,
-                    fuzzySimulator.getTrapY() * scaleRatio - radius / 2,
+                    (fuzzySimulator.getTrapX()  - radius / 2)* scaleRatio,
+                    (fuzzySimulator.getTrapY() - radius / 2) * scaleRatio,
                     radius,
                     radius);
 
@@ -50,7 +50,7 @@ public class Gui {
         public void paintComponent(Graphics g) {}
     }
 
-    private final int defaultWindowWidth = 500;
+    private final int defaultWindowWidth = 800;
     private final int defaultWindowHeight = 800;
     private JFrame frame;
     private MyPanel panel;
@@ -61,7 +61,7 @@ public class Gui {
     public Gui(ExecutionController executionController) {
         initFrame();
         this.executionController = executionController;
-        this.fuzzySimulator = new FuzzySimulator(executionController, frame.getWidth(), frame.getHeight());
+        this.fuzzySimulator = new FuzzySimulator(executionController);
         initToolbar();
         initDisplayPanel();
         initControlBar();
@@ -77,33 +77,33 @@ public class Gui {
         frame.setSize(defaultWindowWidth, defaultWindowHeight);
     }
     private void initToolbar() {
-        JMenuBar mb = new JMenuBar();
-        JMenu m1 = new JMenu("FILE");
-        JMenu m2 = new JMenu("Help");
-        mb.add(m1);
-        mb.add(m2);
-        JMenuItem m11 = new JMenuItem("Open");
-        JMenuItem m22 = new JMenuItem("Save as");
-        m1.add(m11);
-        m1.add(m22);
-        frame.getContentPane().add(BorderLayout.NORTH, mb);
+//        JMenuBar mb = new JMenuBar();
+//        JMenu m1 = new JMenu("FILE");
+//        JMenu m2 = new JMenu("Help");
+//        mb.add(m1);
+//        mb.add(m2);
+//        JMenuItem m11 = new JMenuItem("Open");
+//        JMenuItem m22 = new JMenuItem("Save as");
+//        m1.add(m11);
+//        m1.add(m22);
+//        frame.getContentPane().add(BorderLayout.NORTH, mb);
     }
     private void initDisplayPanel() {
         panel = new MyPanel(frame, fuzzySimulator);
         frame.getContentPane().add(BorderLayout.CENTER, panel);
     }
     private void initControlBar() {
-        JPanel panel = new JPanel();
-        JLabel label = new JLabel("Enter Text");
-        JTextField tf = new JTextField(10);
-        JButton send = new JButton("Send");
-        send.addActionListener(e -> System.out.println("send action"));
-        JButton reset = new JButton("Reset");
-        panel.add(label);
-        panel.add(tf);
-        panel.add(send);
-        panel.add(reset);
-        frame.getContentPane().add(BorderLayout.SOUTH, panel);
+//        JPanel panel = new JPanel();
+//        JLabel label = new JLabel("Enter Text");
+//        JTextField tf = new JTextField(10);
+//        JButton send = new JButton("Send");
+//        send.addActionListener(e -> System.out.println("send action"));
+//        JButton reset = new JButton("Reset");
+//        panel.add(label);
+//        panel.add(tf);
+//        panel.add(send);
+//        panel.add(reset);
+//        frame.getContentPane().add(BorderLayout.SOUTH, panel);
     }
     private void initGuiThread() {
         guiUpdateThread = new Thread(() -> {
