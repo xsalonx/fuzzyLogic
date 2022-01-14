@@ -7,13 +7,11 @@ import net.sourceforge.jFuzzyLogic.rule.FuzzyRuleSet;
 @Getter
 public class FuzzySimulator {
     public enum FuzzyTerms{
-        border_distance,
-        collision_distance,
-        collision_angle,
-        velocity,
+        left_border_distance,
+        right_border_distance,
+        trap_distance,
         direct_angle,
-        direct_change,
-        velocity_change;
+        direct_change;
 
         public final String s;
         FuzzyTerms() {
@@ -23,17 +21,16 @@ public class FuzzySimulator {
     }
     private final String fclFile = "controller.fcl";
 
-    private FuzzyRuleSet fuzzyRuleSet;
-    private ExecutionController executionController;
-    private int width;
-    private int height;
+    private final FuzzyRuleSet fuzzyRuleSet;
+    private final ExecutionController executionController;
+    private final int width;
+    private final int height;
     private int currentY;
     private int currentX;
-    private double currentVelocity;
+    private final double velocity;
     private double currentDirect;
-    private double collisionAngle;
     private double collisionDistance;
-    private final double stepRate = 1;
+    private final double stepRate = 0.5;
 
     private int trapX;
     private int trapY;
@@ -47,7 +44,7 @@ public class FuzzySimulator {
         this.height = height;
         currentX = width / 2;
         currentY = (int) (height * 0.8);
-        trapX = width/2;
+        trapX = width / 2;
         trapY = 0;
         trapRadius = (int) (Math.min(width, height) * trapRadiusRate);
 
@@ -56,21 +53,20 @@ public class FuzzySimulator {
         fuzzyRuleSet = fis.getFuzzyRuleSet();
         currentDirect = 0;
         fuzzyRuleSet.setVariable(FuzzyTerms.direct_angle.s, currentDirect);
-        currentVelocity = 1;
-        fuzzyRuleSet.setVariable(FuzzyTerms.velocity.s, currentVelocity);
+        velocity = 2;
 //        fuzzyRuleSet.chart();
     }
 
     public void run() {
-        setFuzzyVariables();
+        setFuzzyInputs();
         while (!executionController.checkIfEnd()){
-            System.out.println(currentVelocity + " " + currentX + " " + currentY + " " + trapX + " " + trapY);
-            System.out.println(currentDirect + " " + collisionAngle + " " + collisionDistance + '\n');
+            System.out.println(currentX + " " + currentY + " " + trapX + " " + trapY);
+            System.out.println(currentDirect + " " + " " + collisionDistance + " " + '\n');
             move();
 
-            setFuzzyVariables();
+            setFuzzyInputs();
             fuzzyRuleSet.evaluate();
-            updateData();
+            updateFromFuzzyOutputs();
             executionController.waitIfEnabled();
             executionController.sleepSimulation();
         }
@@ -78,45 +74,33 @@ public class FuzzySimulator {
     }
 
     private void move() {
-        currentX += 5 * stepRate * Math.sin(Math.toRadians(currentDirect)) * currentVelocity;
-        trapY += stepRate * Math.cos(Math.toRadians(currentDirect)) * currentVelocity;
+        currentX += 3 * stepRate * Math.sin(Math.toRadians(currentDirect)) * velocity;
+        trapY += stepRate * Math.cos(Math.toRadians(currentDirect)) * velocity;
         if (trapY > currentY + (height - currentY) / 2)
             createNewTrap();
     }
-    private void setFuzzyVariables() {
-        double d;
-        if (trapY < currentY) {
-            if (Math.abs(currentDirect) > 1) {
-                double A = -1 / Math.tan(Math.toRadians(currentDirect));
-                double C = currentY - A * currentX;
-                d = spaceScaler * Math.abs(A * trapX + trapY + C) / Math.sqrt(A * A + 1);
-            } else {
-                d = Math.abs(currentX - trapX);
-            }
-            if (d < trapRadius) {
-                collisionAngle = 90 - Math.toDegrees(Math.acos(d / trapRadius));
-            } else {
-                collisionAngle = -10;
-            }
-        } else {
-            collisionAngle = -10;
+    private void setFuzzyInputs() {
+        if (trapY >= currentY) {
+            createNewTrap();
         }
-        fuzzyRuleSet.setVariable(FuzzyTerms.collision_angle.s, collisionAngle);
+        collisionDistance = (currentX - trapX) * 0.1;
 
-        fuzzyRuleSet.setVariable(FuzzyTerms.border_distance.s, Math.min(currentX, width - currentX)*0.1);
+        System.out.println("borders: " + currentX + ", " + (width - currentX));
+        fuzzyRuleSet.setVariable(FuzzyTerms.left_border_distance.s, currentX * 0.1);
+        fuzzyRuleSet.setVariable(FuzzyTerms.right_border_distance.s, (width - currentX)*0.1);
 
-        collisionDistance = 0.1 * Math.sqrt(Math.pow(currentX - trapX, 2) + Math.pow(currentY - trapY, 2));
-        fuzzyRuleSet.setVariable(FuzzyTerms.collision_distance.s, collisionDistance);
-
-
-
+//        collisionDistance = 0.1 * Math.sqrt(Math.pow(currentX - trapX, 2) + Math.pow(currentY - trapY, 2));
+        fuzzyRuleSet.setVariable(FuzzyTerms.trap_distance.s, collisionDistance);
     }
-    private void updateData() {
-        currentVelocity += fuzzyRuleSet.getVariable(FuzzyTerms.velocity_change.s).getLatestDefuzzifiedValue();
-        fuzzyRuleSet.setVariable(FuzzyTerms.velocity.s, currentVelocity);
 
-        currentDirect += fuzzyRuleSet.getVariable(FuzzyTerms.direct_change.s).getLatestDefuzzifiedValue();
-        fuzzyRuleSet.setVariable(FuzzyTerms.direct_angle.s, currentDirect);
+    private void updateFromFuzzyOutputs() {
+        Double value = fuzzyRuleSet.getVariable(FuzzyTerms.direct_change.s).getLatestDefuzzifiedValue();
+        System.out.println("direction changes: " + value);
+        if (!value.isNaN()) {
+            currentDirect += value;
+            fuzzyRuleSet.setVariable(FuzzyTerms.direct_angle.s, currentDirect);
+            System.err.println("value is NaN ;/");
+        }
     }
 
     private void createNewTrap() {

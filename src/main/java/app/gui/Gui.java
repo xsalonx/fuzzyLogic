@@ -24,24 +24,25 @@ public class Gui {
             g.fillRect(0, 0, getWidth(), getHeight());
             Graphics2D g2d = (Graphics2D) g;
             double scaleRatio = (double) Math.min(getHeight(), getWidth()) / 500;
-            Ellipse2D circle = new Ellipse2D.Double(
-                    fuzzySimulator.getTrapX() * scaleRatio,
-                    fuzzySimulator.getTrapY() * scaleRatio,
-                    fuzzySimulator.getTrapRadius() * scaleRatio,
-                    fuzzySimulator.getTrapRadius() * scaleRatio);
+            double radius = fuzzySimulator.getTrapRadius() * scaleRatio;
+            Ellipse2D trap = new Ellipse2D.Double(
+                    fuzzySimulator.getTrapX() * scaleRatio - radius / 2,
+                    fuzzySimulator.getTrapY() * scaleRatio - radius / 2,
+                    radius,
+                    radius);
 
-            Rectangle2D rectangle = new Rectangle2D.Double(
-                    fuzzySimulator.getCurrentX() * scaleRatio,
-                    fuzzySimulator.getCurrentY() * scaleRatio,
-                    fuzzySimulator.getTrapRadius() * scaleRatio,
-                    fuzzySimulator.getTrapRadius() * scaleRatio
+            Ellipse2D car = new Ellipse2D.Double(
+                    fuzzySimulator.getCurrentX() * scaleRatio - radius / 2,
+                    fuzzySimulator.getCurrentY() * scaleRatio - radius / 2,
+                    radius,
+                    radius
             );
 
             g.setColor(Color.RED);
-            g2d.fill(circle);
+            g2d.fill(trap);
 
             g.setColor(Color.BLACK);
-            g2d.fill(rectangle);
+            g2d.fill(car);
 
         }
 
